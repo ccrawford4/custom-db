@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -27,7 +28,8 @@ func SaveData(path string, data []byte) error {
 	}
 
 	if err = fp.Sync(); err != nil { // fsync
-		return err
+		// TODO: Should handle cases where fsync fails
+		log.Fatalf("[ERROR]: fsync failed: %v", err)
 	}
 
 	// as of here is not atomic
@@ -36,14 +38,15 @@ func SaveData(path string, data []byte) error {
 	}
 
 	// To make it power-atomic, we should open the directory, and do an fsync on it
-	fp, err = os.Open(dir)
+	dp, err := os.Open(dir)
 	if err != nil {
 		return err
 	}
 
 	// fsync
-	if err = fp.Sync(); err != nil {
-		return err
+	if err = dp.Sync(); err != nil {
+		// TODO: Should handle cases where fsync fails
+		log.Fatalf("[ERROR]: fsync failed: %v", err)
 	}
 
 	return nil
