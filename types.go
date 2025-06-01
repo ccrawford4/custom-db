@@ -1,4 +1,4 @@
-package main
+package customdb
 
 type KV interface {
 	Get(key []byte) (val []byte, ok bool)

@@ -1,3 +1,3 @@
-module main
+module customdb
 
 go 1.24.0

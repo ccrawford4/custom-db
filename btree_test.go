@@ -1,19 +1,54 @@
-package main
+package customdb
 
 import (
+	"bytes"
 	"testing"
 )
 
-func TestBasic(t *testing.T) {
-	// Initalize the node
-	node := BNode(make([]byte, BTREE_PAGE_SIZE))
+/*  kvs:
+*  [
+*  		[[]byte("k1"), []byte("val1")],
+*  		[[]byte("k2"), []byte("val2")],
+*  ]
+ */
+func createLeafNode(size uint16, kvs [][][]byte) BNode {
+	node := BNode(make([]byte, BTREE_PAGE_SIZE*size))
+	node.setHeader(BNODE_LEAF, uint16(len(kvs)))
 
-	// Set the header
-	node.setHeader(BNODE_LEAF, 2) // A Leaf node with 2 keys
+	for i := range kvs {
+		entry := kvs[i]
+		key := entry[0]
+		val := entry[1]
 
-	// Add a key-value pair to the node
-	nodeAppendKV(node, 0, 0, []byte("k1"), []byte("hi"))
-	// First '0' is index, second '0' is 'ptr' and unused for leaf nodes
+		nodeAppendKV(node, uint16(i), 0, key, val)
+	}
 
-	nodeAppendKV(node, 1, 0, []byte("k2"), []byte("hello"))
+	return node
+}
+
+func TestConstructBTreeNode(t *testing.T) {
+	kvs := [][][]byte{
+		{[]byte("k1"), []byte("hi")},
+		{[]byte("k2"), []byte("hello")},
+	}
+	node := createLeafNode(uint16(1), kvs)
+	if node.btype() != BNODE_LEAF {
+		t.Errorf("[ERROR]: Expected BNODE_LEAF for the type")
+	}
+	key1 := node.getKey(0)
+	val1 := node.getVal(0)
+	if !bytes.Equal([]byte("k1"), key1) {
+		t.Errorf("[ERROR]: Expected %s, Received %s", "k1", key1)
+	}
+	if !bytes.Equal([]byte("hi"), val1) {
+		t.Errorf("[ERROR]: Expected %s, Received %s", "hi", val1)
+	}
+	key2 := node.getKey(1)
+	val2 := node.getVal(1)
+	if !bytes.Equal([]byte("k2"), key2) {
+		t.Errorf("[ERROR]: Expected %s, Received %s", "k2", key2)
+	}
+	if !bytes.Equal([]byte("hello"), val2) {
+		t.Errorf("[ERROR]: Expected %s, Received %s", "hello", val2)
+	}
 }

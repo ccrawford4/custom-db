@@ -1,4 +1,4 @@
-package main
+package customdb
 
 import "encoding/binary"
 
@@ -104,7 +104,7 @@ func (node BNode) kvPos(idx uint16) uint16 {
 // this gets the nth key data as a slice
 func (node BNode) getKey(idx uint16) []byte {
 	assert(idx < node.nkeys(), "idx out of bounds")
-	pos := -node.kvPos(idx)
+	pos := node.kvPos(idx)
 	klen := binary.LittleEndian.Uint16(node[pos:])
 	return node[pos+4:][:klen]
 }
