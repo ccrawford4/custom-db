@@ -1,6 +1,9 @@
 package customdb
 
-import "encoding/binary"
+import (
+	"bytes"
+	"encoding/binary"
+)
 
 const (
 	BNODE_NODE = 1 // internal nodes with pointers
@@ -182,5 +185,33 @@ func (node BNode) appendRange(old BNode, dstNew uint16, srcOld uint16, n uint16)
 	for i := uint16(0); i < n; i++ {
 		dst, src := dstNew+i, srcOld+i
 		node.appendKV(dst, old.getPtr(src), old.getKey(src), old.getVal(src))
+	}
+}
+
+func (node BNode) lookupLE(key []byte) uint16 {
+	l, r := uint16(0), node.nkeys()
+
+	for l <= r {
+		m := l + (r-l)/2
+		cmp := bytes.Compare(node.getKey(m), key)
+		if cmp < 0 {
+			l = m + 1
+		} else if cmp > 0 {
+			r = m - 1
+		} else {
+			return m
+		}
+	}
+	return r - 1
+}
+
+// TODO: What if all positions are greater than the key and idx is -1?
+func (node BNode) leafUpsert(old BNode, key []byte) {
+	idx := old.lookupLE(key)
+	val := old.getVal(idx)
+	if bytes.Equal(key, old.getKey(idx)) {
+		node.leafUpdate(old, idx, key, val) // found, update it
+	} else {
+		node.leafInsert(old, idx+1, key, val) // not found. insert
 	}
 }

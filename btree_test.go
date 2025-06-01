@@ -172,3 +172,69 @@ func TestCopyOnWriteAndNewInsertBTreeNode(t *testing.T) {
 		t.Errorf("[ERROR]: Expected world, got %s", new.getVal(3))
 	}
 }
+
+func TestLeafUpsertUpdate(t *testing.T) {
+	oldKvs := [][][]byte{
+		{[]byte("k1"), []byte("val1")},
+		{[]byte("k3"), []byte("val3")},
+		{[]byte("k5"), []byte("val5")},
+	}
+	old := createLeafNode(1, oldKvs)
+
+	new := BNode(make([]byte, BTREE_PAGE_SIZE))
+	new.leafUpsert(old, []byte("k3"))
+
+	if new.nkeys() != 3 {
+		t.Errorf("[ERROR]: Expected 3 keys, got %d", new.nkeys())
+	}
+
+	if !bytes.Equal(new.getKey(1), []byte("k3")) {
+		t.Errorf("[ERROR]: Expected k3, got %s", new.getKey(1))
+	}
+	if !bytes.Equal(new.getVal(1), []byte("val3")) {
+		t.Errorf("[ERROR]: Expected val3, got %s", new.getVal(1))
+	}
+}
+
+func TestLeafUpsertUpdateSingle(t *testing.T) {
+	oldKvs := [][][]byte{
+		{[]byte("k2"), []byte("val2")},
+	}
+	old := createLeafNode(1, oldKvs)
+
+	new := BNode(make([]byte, BTREE_PAGE_SIZE))
+	new.leafUpsert(old, []byte("k2"))
+
+	if new.nkeys() != 1 {
+		t.Errorf("[ERROR]: Expected 1 key, got %d", new.nkeys())
+	}
+
+	if !bytes.Equal(new.getKey(0), []byte("k2")) {
+		t.Errorf("[ERROR]: Expected k2, got %s", new.getKey(0))
+	}
+	if !bytes.Equal(new.getVal(0), []byte("val2")) {
+		t.Errorf("[ERROR]: Expected val2, got %s", new.getVal(0))
+	}
+}
+
+func TestLeafUpsertUpdateFirst(t *testing.T) {
+	oldKvs := [][][]byte{
+		{[]byte("k1"), []byte("val1")},
+		{[]byte("k3"), []byte("val3")},
+	}
+	old := createLeafNode(1, oldKvs)
+
+	new := BNode(make([]byte, BTREE_PAGE_SIZE))
+	new.leafUpsert(old, []byte("k1"))
+
+	if new.nkeys() != 2 {
+		t.Errorf("[ERROR]: Expected 2 keys, got %d", new.nkeys())
+	}
+
+	if !bytes.Equal(new.getKey(0), []byte("k1")) {
+		t.Errorf("[ERROR]: Expected k1, got %s", new.getKey(0))
+	}
+	if !bytes.Equal(new.getVal(0), []byte("val1")) {
+		t.Errorf("[ERROR]: Expected val1, got %s", new.getVal(0))
+	}
+}
