@@ -1,4 +1,4 @@
-package customdb
+package storage
 
 import (
 	"fmt"

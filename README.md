@@ -25,14 +25,42 @@ type KV interface {
 
 ## Building
 
+Build the main executable:
+
 ```bash
-go build ./cmd
+go build .
 ```
+
+This creates an executable in the current directory.
+
+## Running
+
+Run the program:
+
+```bash
+./customdb
+```
+
+The program initializes a database with the file `data.db` and confirms successful initialization.
 
 ## Testing
 
+Run all tests:
+
 ```bash
-go test
+go test ./...
+```
+
+Run tests with verbose output:
+
+```bash
+go test -v ./...
+```
+
+Run tests for a specific package:
+
+```bash
+go test ./internal/btree
 ```
 
 ## Implementation Details
@@ -42,4 +70,3 @@ go test
 - Maximum key size: 1000 bytes
 - Maximum value size: 3000 bytes
 - Immutable node design for data integrity
-

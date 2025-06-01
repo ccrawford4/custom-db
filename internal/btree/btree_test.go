@@ -1,4 +1,4 @@
-package customdb
+package btree
 
 import (
 	"bytes"
