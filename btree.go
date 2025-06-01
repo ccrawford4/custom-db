@@ -129,23 +129,23 @@ func init() {
 	assert(node1max <= BTREE_PAGE_SIZE, "Node size exceeds page size")
 }
 
-// Adds a new-key value pair. ASSUMES KEY_VALUE PAIRS ARE SET IN ORDER:
+// Adds a node-key value pair. ASSUMES KEY_VALUE PAIRS ARE SET IN ORDER:
 // USES OFFSET OF PREVIOUS KV PAIR
-func nodeAppendKV(new BNode, idx uint16, ptr uint64, key []byte, val []byte) {
+func (node BNode) appendKV(idx uint16, ptr uint64, key []byte, val []byte) {
 	// pointers
-	new.setPtr(idx, ptr)
+	node.setPtr(idx, ptr)
 
 	// Key-Value pairs
-	pos := new.kvPos(idx) // uses the offset value of the previous key
+	pos := node.kvPos(idx) // uses the offset value of the previous key
 
 	// 4-byte KV sizes
-	binary.LittleEndian.PutUint16(new[pos+0:], uint16(len(key))) // set the size of the key
-	binary.LittleEndian.PutUint16(new[pos+2:], uint16(len(val))) // set the size of the value
+	binary.LittleEndian.PutUint16(node[pos+0:], uint16(len(key))) // set the size of the key
+	binary.LittleEndian.PutUint16(node[pos+2:], uint16(len(val))) // set the size of the value
 
 	// KV data
-	copy(new[pos+4:], key)                  // Set the key
-	copy(new[pos+4+uint16(len(key)):], val) // Set the value
+	copy(node[pos+4:], key)                  // Set the key
+	copy(node[pos+4+uint16(len(key)):], val) // Set the value
 
 	// update the offset value for the next key
-	new.setOffset(idx+1, new.getOffset(idx)+4+uint16((len(key)+len(val))))
+	node.setOffset(idx+1, node.getOffset(idx)+4+uint16((len(key)+len(val))))
 }

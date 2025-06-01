@@ -20,7 +20,7 @@ func createLeafNode(size uint16, kvs [][][]byte) BNode {
 		key := entry[0]
 		val := entry[1]
 
-		nodeAppendKV(node, uint16(i), 0, key, val)
+		node.appendKV(uint16(i), 0, key, val)
 	}
 
 	return node
@@ -65,9 +65,9 @@ func TestCopyOnWriteBTreeNode(t *testing.T) {
 	new.setHeader(BNODE_LEAF, 3)
 
 	// Copy-on-write means no inplace updates; updates creates a new node
-	nodeAppendKV(new, 0, 0, old.getKey(0), old.getVal(0))
-	nodeAppendKV(new, 1, 0, []byte("k2"), []byte("updated"))
-	nodeAppendKV(new, 2, 0, old.getKey(2), old.getVal(2))
+	new.appendKV(0, 0, old.getKey(0), old.getVal(0))
+	new.appendKV(1, 0, []byte("k2"), []byte("updated"))
+	new.appendKV(2, 0, old.getKey(2), old.getVal(2))
 
 	// Verify the new node has the updated value
 	if !bytes.Equal(new.getKey(1), []byte("k2")) {
@@ -108,8 +108,8 @@ func TestCopyOnWriteAndDeleteBTreeNode(t *testing.T) {
 	new := BNode(make([]byte, BTREE_PAGE_SIZE))
 	new.setHeader(BNODE_LEAF, 2)
 
-	nodeAppendKV(new, 0, 0, old.getKey(0), old.getVal(0))
-	nodeAppendKV(new, 1, 0, old.getKey(2), old.getVal(2))
+	new.appendKV(0, 0, old.getKey(0), old.getVal(0))
+	new.appendKV(1, 0, old.getKey(2), old.getVal(2))
 
 	// Verify the new node has the updated value
 	if !bytes.Equal(new.getKey(0), []byte("k1")) {
@@ -138,10 +138,11 @@ func TestCopyOnWriteAndNewInsertBTreeNode(t *testing.T) {
 
 	new := BNode(make([]byte, 2*BTREE_PAGE_SIZE)) // larger
 	new.setHeader(BNODE_LEAF, 4)
-	nodeAppendKV(new, 0, 0, []byte("a"), []byte("b"))
-	nodeAppendKV(new, 1, 0, old.getKey(0), old.getVal(0))
-	nodeAppendKV(new, 2, 0, old.getKey(1), old.getVal(1))
-	nodeAppendKV(new, 3, 0, old.getKey(2), old.getVal(2))
+
+	new.appendKV(0, 0, []byte("a"), []byte("b"))
+	new.appendKV(1, 0, old.getKey(0), old.getVal(0))
+	new.appendKV(2, 0, old.getKey(1), old.getVal(1))
+	new.appendKV(3, 0, old.getKey(2), old.getVal(2))
 
 	// Verify the new node has the inserted key-value pair
 	if !bytes.Equal(new.getKey(0), []byte("a")) {
