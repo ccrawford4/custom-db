@@ -37,6 +37,13 @@ const (
 // The offset of the first KV pair is always 0, so its not stored.
 // To find the position of the n-th pair, use the offsets[n-1]
 
+// CREATING NODES:
+// Nodes are immutable, only create new nodes from old nodes
+// To create a new node:
+// 	 1. Allocate a byte array
+// 	 2. Set the number of keys with setHeader()
+// 	 3. Add each key in sort order with appendKV()
+
 // Block Node
 type BNode []byte // can be dumped to the disk
 
@@ -148,4 +155,32 @@ func (node BNode) appendKV(idx uint16, ptr uint64, key []byte, val []byte) {
 
 	// update the offset value for the next key
 	node.setOffset(idx+1, node.getOffset(idx)+4+uint16((len(key)+len(val))))
+}
+
+// node size in bytes
+func (node BNode) nbytes() uint16 {
+	return node.kvPos(node.nkeys()) // uses the offset value of the last key
+}
+
+// inserts a new leaf node, if the key already exists then use the leafUpdate() func
+func (node BNode) leafInsert(old BNode, idx uint16, key []byte, val []byte) {
+	node.setHeader(BNODE_LEAF, old.nkeys()+1)
+	node.appendRange(old, 0, 0, idx)                   // copy the keys before 'idx'
+	node.appendKV(idx, 0, key, val)                    // add the new key value pair
+	node.appendRange(old, idx+1, idx, old.nkeys()-idx) // copy the keys from 'idx' on
+}
+
+func (node BNode) leafUpdate(old BNode, idx uint16, key []byte, val []byte) {
+	node.setHeader(BNODE_LEAF, old.nkeys())
+	node.appendRange(old, 0, 0, idx)                         // copy all the keys before idx
+	node.appendKV(idx, 0, key, val)                          // add the new key value pair
+	node.appendRange(old, idx+1, idx+1, old.nkeys()-(idx+1)) // insert the new value
+}
+
+// Just a loop for copying keys, values, and pointers
+func (node BNode) appendRange(old BNode, dstNew uint16, srcOld uint16, n uint16) {
+	for i := uint16(0); i < n; i++ {
+		dst, src := dstNew+i, srcOld+i
+		node.appendKV(dst, old.getPtr(src), old.getKey(src), old.getVal(src))
+	}
 }
