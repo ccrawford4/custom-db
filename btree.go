@@ -13,28 +13,34 @@ const (
 	BTREE_MAX_VAL_SIZE = 3000
 )
 
-type Node struct {
-	keys [][]byte
-}
+/// THE NODE FORMAT:
+// | type | nkeys |  pointers  |  offsets   | key-values | unused |
+// |  2B  |   2B  | nkeys × 8B | nkeys × 2B |     ...    |        |
 
-// A list of sorted KV pairs
-type LeafNode struct {
-	Node
-	vals [][]byte
-}
+// where:
+// type = node type (leaf or internal)
+// nkeys = the number of keys (and the number of child pointers)
 
-// list of sorted key-pointer pairs
-type InternalNode struct {
-	Node
-	children []*Node
-}
+// | key-values | -> broken down:
+// | key_size | val_size | key | val |
+// |    2B    |    2B    | ... | ... |
 
-func Encode(node *Node) []byte
-func Decode(page []byte) (*Node, error)
+// each KV pair is prefixed by its size, for internal nodes, the value size is 0
 
+// encoded KV pairs are concatenated. To find the nth KV pair, we have to read all previous
+// pairs, unless we store an offset of each KV pair
+// e.g leaf node like {"k1": "hi", "k3": "hello"}
+// | type | nkeys | pointers | offsets |            key-values           | unused |
+// |   2  |   2   | nil nil  |  8 19   | 2 2 "k1" "hi"  2 5 "k3" "hello" |        |
+// |  2B  |  2B   |   2×8B   |  2×2B   | 4B + 2B + 2B + 4B + 2B + 5B     |        |
+
+// The offset of the first KV pair is always 0, so its not stored.
+// To find the position of the n-th pair, use the offsets[n-1]
+
+// Block Node
 type BNode []byte // can be dumped to the disk
 
-// read the fixex-size header
+// read the fixed-size header
 func (node BNode) btype() uint16 {
 	return binary.LittleEndian.Uint16(node[0:2])
 }
@@ -97,7 +103,7 @@ func (node BNode) getKey(idx uint16) []byte {
 // this gets the nth value data as a slice (for leaf nodes)
 func (node BNode) getVal(idx uint16) []byte {
 	assert(idx < node.nkeys(), "idx out of bounds")
-	pos := node.nkeys()
+	pos := node.kvPos(idx)
 	klen := binary.LittleEndian.Uint16(node[pos+0:])
 	vlen := binary.LittleEndian.Uint16(node[pos+2:])
 	return node[pos+4+klen:][:vlen]
